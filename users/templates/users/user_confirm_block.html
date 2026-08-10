@@ -1,0 +1,39 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Подтверждение блокировки{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-olive">
+                <div class="card-header" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white;">
+                    <h4 class="mb-0">Подтверждение действия</h4>
+                </div>
+                <div class="card-body">
+                    <p style="color: #556B2F;">Вы уверены, что хотите изменить статус пользователя?</p>
+                    <div class="alert" style="background: #f0f5e8; border-color: #6B8E23; color: #556B2F;">
+                        <p><strong>Пользователь:</strong> {{ user.email }}</p>
+                        <p><strong>Текущий статус:</strong>
+                            {% if user.is_active %}
+                                <span style="color: #2E7D32;">Активен</span>
+                            {% else %}
+                                <span style="color: #8B0000;">Заблокирован</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn" style="background: linear-gradient(135deg, #dc3545 0%, #8B0000 100%); color: white; border: none; padding: 8px 25px;">
+                                Подтвердить
+                            </button>
+                            <a href="{% url 'users:user_list' %}" class="btn btn-secondary">Отмена</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

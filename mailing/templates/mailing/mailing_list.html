@@ -1,0 +1,60 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Список рассылок{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color: #556B2F;">Список рассылок</h2>
+    <a href="{% url 'mailing:mailing_create' %}" class="btn" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white; border: none;">
+        Создать рассылку
+    </a>
+</div>
+
+{% if mailing_list %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white;">
+                <tr>
+                    <th>#</th>
+                    <th>Тема</th>
+                    <th>Начало</th>
+                    <th>Окончание</th>
+                    <th>Статус</th>
+                    <th>Получатели</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mailing in mailing_list %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ mailing.message.subject }}</td>
+                        <td>{{ mailing.start_time|date:"d.m.Y H:i" }}</td>
+                        <td>{{ mailing.end_time|date:"d.m.Y H:i" }}</td>
+                        <td>
+                            <span class="badge
+                                {% if mailing.status == 'created' %}bg-secondary
+                                {% elif mailing.status == 'running' %}bg-success
+                                {% elif mailing.status == 'completed' %}bg-info
+                                {% elif mailing.status == 'disabled' %}bg-danger
+                                {% endif %}">
+                                {{ mailing.get_status_display }}
+                            </span>
+                        </td>
+                        <td><span class="badge" style="background: #6B8E23;">{{ mailing.recipients.count }}</span></td>
+                        <td>
+                            <a href="{% url 'mailing:mailing_detail' mailing.pk %}" class="btn btn-sm" style="background: #D4E8B0; color: #556B2F; border: 1px solid #6B8E23;">👁️</a>
+                            <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn btn-sm" style="background: #D4E8B0; color: #556B2F; border: 1px solid #6B8E23;">✏️</a>
+                            <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-sm btn-danger">🗑️</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert" style="background: #f0f5e8; border-color: #6B8E23; color: #556B2F;">
+        У вас пока нет рассылок. <a href="{% url 'mailing:mailing_create' %}" style="color: #6B8E23; font-weight: bold;">Создайте первую рассылку</a>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Удаление рассылки{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-olive">
+            <div class="card-header" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white;">
+                <h3 class="text-center mb-0">Удаление рассылки</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-center" style="color: #556B2F;">Вы уверены, что хотите удалить рассылку?</p>
+                <div class="alert" style="background: #f0f5e8; border-color: #6B8E23; color: #556B2F;">
+                    <strong>Рассылка #{{ mailing.id }}</strong><br>
+                    Тема: {{ mailing.message.subject }}<br>
+                    Статус: {{ mailing.get_status_display }}<br>
+                    Получателей: {{ mailing.recipients.count }}
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">Отмена</a>
+                        <button type="submit" class="btn" style="background: linear-gradient(135deg, #dc3545 0%, #8B0000 100%); color: white; border: none;">
+                            Удалить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

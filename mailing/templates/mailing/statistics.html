@@ -1,0 +1,127 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Статистика рассылок{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4" style="color: #556B2F;">Статистика рассылок</h1>
+
+    <div class="row">
+        <div class="col-md-3">
+            <a href="{% url 'mailing:mailing_list' %}" class="text-decoration-none">
+                <div class="card text-white mb-3" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); transition: transform 0.3s ease;">
+                    <div class="card-header">
+                        <i class="bi bi-envelope-paper"></i> Всего рассылок
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">{{ stats.total_mailings }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-3">
+            <a href="{% url 'mailing:statistics' %}" class="text-decoration-none">
+                <div class="card text-white mb-3" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); transition: transform 0.3s ease;">
+                    <div class="card-header">
+                        <i class="bi bi-send"></i> Всего попыток
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">{{ stats.total_attempts }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-3">
+            <a href="{% url 'mailing:statistics' %}" class="text-decoration-none">
+                <div class="card text-white mb-3" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); transition: transform 0.3s ease;">
+                    <div class="card-header">
+                        <i class="bi bi-check-circle"></i> Успешных попыток
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">{{ stats.success_attempts }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-3">
+            <a href="{% url 'mailing:statistics' %}" class="text-decoration-none">
+                <div class="card text-white mb-3" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); transition: transform 0.3s ease;">
+                    <div class="card-header">
+                        <i class="bi bi-x-circle"></i> Неуспешных попыток
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">{{ stats.failed_attempts }}</h3>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card border-olive">
+                <div class="card-header" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white;">
+                    <h5 class="mb-0">Общая статистика</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong style="color: #556B2F;">Процент успешных отправок:</strong></p>
+                            {% if stats.total_attempts > 0 %}
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); width: {{ stats.success_rate }}%;"
+                                     role="progressbar"
+                                     aria-valuenow="{{ stats.success_rate }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {{ stats.success_rate|floatformat:1 }}%
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert" style="background: #f0f5e8; border-color: #6B8E23; color: #556B2F;">
+                                Нет данных для отображения статистики
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center" style="border-color: #D4E8B0;">
+                                    Всего рассылок
+                                    <span class="badge" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%);">{{ stats.total_mailings }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center" style="border-color: #D4E8B0; background: #f8faf5;">
+                                    Всего попыток
+                                    <span class="badge" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%);">{{ stats.total_attempts }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center" style="border-color: #D4E8B0;">
+                                    Успешно
+                                    <span class="badge" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%);">{{ stats.success_attempts }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center" style="border-color: #D4E8B0; background: #f8faf5;">
+                                    Неуспешно
+                                    <span class="badge" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%);">{{ stats.failed_attempts }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 text-center">
+        <a href="{% url 'mailing:mailing_list' %}" class="btn" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white; border: none;">К списку рассылок</a>
+        <a href="{% url 'index' %}" class="btn" style="background: #D4E8B0; color: #556B2F; border: 1px solid #6B8E23;">На главную</a>
+    </div>
+</div>
+
+<style>
+    .card.text-white:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(85, 107, 47, 0.3);
+    }
+</style>
+{% endblock %}
