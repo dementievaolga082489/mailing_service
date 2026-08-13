@@ -52,11 +52,17 @@ class UserRegistrationView(CreateView):
         token = secrets.token_hex(16)
         user.email_verification_token = token
         user.save()
-        host = self.request.get_host()
-        url = f"http://{host}/users/email-confirm/{token}/"
+
+        # Используем именованный маршрут для формирования URL
+        confirm_url = self.request.build_absolute_uri(
+            reverse(
+                "users:verify_email",
+                kwargs={"token": token},
+            )
+        )
         send_mail(
             subject="Подтверждение почты",
-            message=f"Привет, перейди по ссылке для подтверждения почты {url}",
+            message=f"Привет, перейди по ссылке для подтверждения почты {confirm_url}",
             from_email=EMAIL_HOST_USER,
             recipient_list=[user.email],
         )
@@ -110,9 +116,13 @@ class CustomPasswordResetView(LoginView):
             user.email_verification_token = token
             user.save()
 
-            # Создаем ссылку
-            host = request.get_host()
-            reset_url = f"http://{host}/users/password-reset-confirm/{token}/"
+            # Используем именованный маршрут для формирования URL
+            reset_url = self.request.build_absolute_uri(
+                reverse(
+                    "users:password_reset_confirm",
+                    kwargs={"token": token},
+                )
+            )
 
             # Отправляем письмо
             send_mail(
