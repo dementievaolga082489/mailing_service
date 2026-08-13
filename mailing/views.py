@@ -262,9 +262,15 @@ def send_mailing_view(request, pk):
         messages.error(request, "Нет прав")
         return redirect("mailing:mailing_detail", pk=pk)
 
+    # Обновляем статус перед проверкой
     mailing.update_status()
-    if mailing.status == "disabled":
-        messages.error(request, "Рассылка отключена")
+
+    # Проверяем, что рассылка находится в статусе "running"
+    if mailing.status != "running":
+        messages.error(
+            request,
+            "Рассылку можно отправить только в интервале между датой начала и датой окончания.",
+        )
         return redirect("mailing:mailing_detail", pk=pk)
 
     result = send_mailing(mailing)
