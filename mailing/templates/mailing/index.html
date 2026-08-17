@@ -1,0 +1,53 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Сервис управления рассылками</h1>
+
+    <div class="row">
+        <div class="col-md-4">
+            <a href="{% url 'mailing:mailing_list' %}" class="text-decoration-none">
+                <div class="card text-white mb-3" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%);">
+                    <div class="card-header">
+                        <i class="bi bi-envelope-paper"></i> Всего рассылок
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title display-6">{{ stats.total_mailings }}</h5>
+                        <p class="card-text">Всего создано рассылок в системе</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'mailing:mailing_list' %}" class="text-decoration-none">
+                <div class="card text-white mb-3" style="background: linear-gradient(135deg, #556B2F 0%, #8FBC8F 100%);">
+                    <div class="card-header">
+                        <i class="bi bi-play-circle"></i> Активные рассылки
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title display-6">{{ stats.active_mailings }}</h5>
+                        <p class="card-text">Рассылок запущено в данный момент</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'mailing:client_list' %}" class="text-decoration-none">
+                <div class="card text-white mb-3" style="background: linear-gradient(135deg, #6B8E23 0%, #808000 100%);">
+                    <div class="card-header">
+                        <i class="bi bi-people"></i> Клиенты
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title display-6">{{ stats.total_clients }}</h5>
+                        <p class="card-text">Всего клиентов в системе</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

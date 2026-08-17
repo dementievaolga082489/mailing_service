@@ -1,0 +1,229 @@
+# region ИМПОРТЫ
+import secrets
+
+from django.core.mail import send_mail
+from django.shortcuts import redirect, get_object_or_404, render
+from django.contrib.auth.views import LoginView
+from django.views.generic import CreateView, UpdateView, ListView
+from django.urls import reverse_lazy, reverse
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+
+from config.settings import EMAIL_HOST_USER
+from .models import User
+from .forms import UserRegistrationForm, UserLoginForm, UserProfileForm
+
+# endregion
+
+
+# region АУТЕНТИФИКАЦИЯ (ВХОД / ВЫХОД)
+class UserLoginView(LoginView):
+    """Вход в систему"""
+
+    template_name = "users/login.html"
+    form_class = UserLoginForm
+    redirect_authenticated_user = True
+
+
+def user_logout_view(request):
+    """Выход из системы"""
+    from django.contrib.auth import logout
+
+    logout(request)
+    messages.info(request, "Вы вышли из системы")
+    return redirect("index")
+
+
+# endregion
+
+
+# region РЕГИСТРАЦИЯ И ПОДТВЕРЖДЕНИЕ EMAIL
+class UserRegistrationView(CreateView):
+    """Регистрация нового пользователя"""
+
+    model = User
+    form_class = UserRegistrationForm
+    template_name = "users/register.html"
+    success_url = reverse_lazy("users:login")
+
+    def form_valid(self, form):
+        user = form.save(commit=False)
+        user.is_active = False
+        token = secrets.token_hex(16)
+        user.email_verification_token = token
+        user.save()
+
+        # Используем именованный маршрут для формирования URL
+        confirm_url = self.request.build_absolute_uri(
+            reverse(
+                "users:verify_email",
+                kwargs={"token": token},
+            )
+        )
+        send_mail(
+            subject="Подтверждение почты",
+            message=f"Привет, перейди по ссылке для подтверждения почты {confirm_url}",
+            from_email=EMAIL_HOST_USER,
+            recipient_list=[user.email],
+        )
+        return super().form_valid(form)
+
+
+def verify_email(request, token):
+    """Подтверждение email по токену"""
+    user = get_object_or_404(User, email_verification_token=token)
+    user.is_active = True
+    user.save()
+    return redirect(reverse("users:login"))
+
+
+# endregion
+
+
+# region ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ
+class UserProfileView(LoginRequiredMixin, UpdateView):
+    """Профиль пользователя"""
+
+    model = User
+    form_class = UserProfileForm
+    template_name = "users/profile.html"
+    success_url = reverse_lazy("users:profile")
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+
+# endregion
+
+
+# region ВОССТАНОВЛЕНИЕ ПАРОЛЯ
+class CustomPasswordResetView(LoginView):
+    """Страница для ввода email и отправки ссылки"""
+
+    template_name = "users/password_reset_form.html"
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name)
+
+    def post(self, request, *args, **kwargs):
+        email = request.POST.get("email")
+
+        try:
+            user = User.objects.get(email=email)
+
+            # Создаем токен для сброса пароля
+            token = secrets.token_hex(32)
+            user.email_verification_token = token
+            user.save()
+
+            # Используем именованный маршрут для формирования URL
+            reset_url = self.request.build_absolute_uri(
+                reverse(
+                    "users:password_reset_confirm",
+                    kwargs={"token": token},
+                )
+            )
+
+            # Отправляем письмо
+            send_mail(
+                subject="Восстановление пароля",
+                message=f"""Здравствуйте, {user.username}!
+
+Для установки нового пароля перейдите по ссылке:
+{reset_url}""",
+                from_email=EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+            messages.success(
+                request, "Ссылка для восстановления отправлена на ваш email."
+            )
+            return redirect("users:login")
+
+        except User.DoesNotExist:
+            messages.error(request, "Пользователь с таким email не найден.")
+            return render(request, self.template_name)
+
+
+class CustomPasswordResetConfirmView(UpdateView):
+    """Страница установки нового пароля по токену"""
+
+    model = User
+    fields = []
+    template_name = "users/password_reset_confirm.html"
+    success_url = reverse_lazy("users:login")
+
+    def get_object(self, queryset=None):
+        token = self.kwargs.get("token")
+        user = get_object_or_404(User, email_verification_token=token)
+        return user
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["token"] = self.kwargs.get("token")
+        return context
+
+    def post(self, request, *args, **kwargs):
+        token = self.kwargs.get("token")
+        user = get_object_or_404(User, email_verification_token=token)
+
+        password1 = request.POST.get("password1")
+        password2 = request.POST.get("password2")
+
+        if password1 != password2:
+            messages.error(request, "Пароли не совпадают.")
+            return render(request, self.template_name, {"token": token})
+
+        if len(password1) < 8:
+            messages.error(request, "Пароль должен содержать минимум 8 символов.")
+            return render(request, self.template_name, {"token": token})
+
+        # Устанавливаем новый пароль
+        user.set_password(password1)
+        user.is_active = True
+        user.is_email_verified = True
+        user.email_verification_token = ""  # Очищаем токен
+        user.save()
+
+        messages.success(request, "Пароль успешно изменен! Теперь вы можете войти.")
+        return redirect("users:login")
+
+
+# endregion
+
+
+# region УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (ДЛЯ МЕНЕДЖЕРОВ)
+class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """Список пользователей (для менеджеров)"""
+
+    model = User
+    template_name = "users/user_list.html"
+    context_object_name = "users"
+
+    def test_func(self):
+        return self.request.user.is_manager
+
+    def get_queryset(self):
+        return User.objects.all()
+
+
+class UserBlockView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Блокировка/разблокировка пользователя (для менеджеров)"""
+
+    model = User
+    fields = ["is_active"]
+    template_name = "users/user_confirm_block.html"
+    success_url = reverse_lazy("users:user_list")
+
+    def test_func(self):
+        return self.request.user.is_manager
+
+    def form_valid(self, form):
+        user = form.save()
+        status = "заблокирован" if not user.is_active else "разблокирован"
+        messages.success(self.request, f"Пользователь {user.email} {status}")
+        return super().form_valid(form)
+
+
+# endregion

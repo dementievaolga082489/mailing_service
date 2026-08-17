@@ -1,0 +1,142 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Детали рассылки #{{ mailing.id }}{% endblock %}
+
+{% block content %}
+<div class="card border-olive">
+    <div class="card-header" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Рассылка #{{ mailing.id }}</h3>
+            <div>
+                <span class="badge
+                    {% if mailing.status == 'created' %}bg-secondary
+                    {% elif mailing.status == 'running' %}bg-success
+                    {% elif mailing.status == 'completed' %}bg-info
+                    {% elif mailing.status == 'disabled' %}bg-danger
+                    {% endif %} fs-6">
+                    {{ mailing.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 style="color: #556B2F;">Информация о рассылке</h5>
+                <table class="table table-bordered">
+                    <tr style="background: #f0f5e8;">
+                        <th style="color: #556B2F;">Тема сообщения</th>
+                        <td>{{ mailing.message.subject }}</td>
+                    </tr>
+                    <tr>
+                        <th style="color: #556B2F;">Дата начала</th>
+                        <td>{{ mailing.start_time|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                    <tr style="background: #f0f5e8;">
+                        <th style="color: #556B2F;">Дата окончания</th>
+                        <td>{{ mailing.end_time|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th style="color: #556B2F;">Владелец</th>
+                        <td>{{ mailing.owner.email }}</td>
+                    </tr>
+                    <tr style="background: #f0f5e8;">
+                        <th style="color: #556B2F;">Статус</th>
+                        <td>{{ mailing.get_status_display }}</td>
+                    </tr>
+                    <tr>
+                        <th style="color: #556B2F;">Активна</th>
+                        <td>{% if mailing.is_active %}<span style="color: #6B8E23;">Да</span>{% else %}<span style="color: #dc3545;">Нет</span>{% endif %}</td>
+                    </tr>
+                    <tr style="background: #f0f5e8;">
+                        <th style="color: #556B2F;">Количество получателей</th>
+                        <td><span class="badge" style="background: #6B8E23;">{{ mailing.recipients.count }}</span></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 style="color: #556B2F;">Текст сообщения</h5>
+                <div class="card border-olive">
+                    <div class="card-header" style="background: #f0f5e8; color: #556B2F;">
+                        <strong>{{ mailing.message.subject }}</strong>
+                    </div>
+                    <div class="card-body" style="background: #f8faf5;">
+                        <pre style="white-space: pre-wrap; word-wrap: break-word; color: #333;">{{ mailing.message.body }}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <h5 style="color: #556B2F;">Список получателей</h5>
+                <ul class="list-group">
+                    {% for recipient in mailing.recipients.all %}
+                        <li class="list-group-item" style="border-color: #D4E8B0;">
+                            <span style="color: #556B2F;">{{ recipient.full_name }}</span> - {{ recipient.email }}
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">Нет получателей</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <h5 style="color: #556B2F;">Попытки отправки</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white;">
+                            <tr>
+                                <th>Клиент</th>
+                                <th>Время</th>
+                                <th>Статус</th>
+                                <th>Ответ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attempt in mailing.attempts.all|slice:":10" %}
+                                <tr>
+                                    <td>{{ attempt.client.full_name }}</td>
+                                    <td>{{ attempt.attempt_time|date:"d.m.Y H:i:s" }}</td>
+                                    <td>
+                                        <span class="badge {% if attempt.status == 'success' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ attempt.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ attempt.server_response|truncatechars:30 }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-muted">Нет попыток отправки</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if mailing.attempts.count > 10 %}
+                        <p class="text-muted">Показано 10 из {{ mailing.attempts.count }} попыток</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2 flex-wrap">
+            <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">← Назад</a>
+
+            {% if mailing.status != 'disabled' and mailing.status != 'completed' %}
+                <a href="{% url 'mailing:mailing_send' mailing.pk %}" class="btn" style="background: linear-gradient(135deg, #556B2F 0%, #6B8E23 100%); color: white; border: none;">Запустить рассылку</a>
+            {% endif %}
+
+            {% if user == mailing.owner %}
+                <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn" style="background: #D4E8B0; color: #556B2F; border: 1px solid #6B8E23;">Редактировать</a>
+                <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-danger">Удалить</a>
+            {% endif %}
+
+            {% if user.is_manager %}
+                <a href="{% url 'mailing:mailing_toggle' mailing.pk %}" class="btn btn-{% if mailing.is_active %}danger{% else %}success{% endif %}">
+                    {% if mailing.is_active %}Отключить{% else %}Включить{% endif %}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
